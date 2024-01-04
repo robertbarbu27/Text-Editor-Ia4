@@ -44,7 +44,7 @@ class Tab(ttk.Frame):
         self.file_dir = None
         self.file_name = os.path.basename(FileDir)
         self.status = md5(self.textbox.get(1.0, 'end').encode('utf-8'))
-        
+
         # Button to toggle bold
         bold_button = ttk.Button(self, text="Bold", command=self.toggle_bold)
         bold_button.pack(side='left')
@@ -56,23 +56,23 @@ class Tab(ttk.Frame):
         self.font_combobox.bind("<<ComboboxSelected>>", self.change_font)
         self.font_combobox.pack(side='left')
 
+        # Spinbox for font size
+        self.font_size_spinbox = tk.Spinbox(self, from_=8, to=72, width=5, command=self.change_font_size)
+        self.font_size_spinbox.delete(0, tk.END)
+        self.font_size_spinbox.insert(0, "12")
+        self.font_size_spinbox.pack(side='left')
+
     def create_text_widget(self):
-        # Horizontal Scroll Bar
         xscrollbar = tk.Scrollbar(self, orient='horizontal')
         xscrollbar.pack(side='bottom', fill='x')
 
-        # Vertical Scroll Bar
         yscrollbar = tk.Scrollbar(self)
         yscrollbar.pack(side='right', fill='y')
 
-        # Create Text Editor Box
-        textbox = tk.Text(self, relief='sunken', borderwidth=0, wrap='none')
+        textbox = tk.Text(self, relief='sunken', borderwidth=0, wrap='none', font=('Courier New', 12))
         textbox.config(xscrollcommand=xscrollbar.set, yscrollcommand=yscrollbar.set, undo=True, autoseparators=True)
-
-        # Pack the textbox
         textbox.pack(fill='both', expand=True)
 
-        # Configure Scrollbars
         xscrollbar.config(command=textbox.xview)
         yscrollbar.config(command=textbox.yview)
 
@@ -80,31 +80,39 @@ class Tab(ttk.Frame):
 
     def toggle_bold(self):
         try:
-            # Get selected text indices
             start_index = self.textbox.index(tk.SEL_FIRST)
             end_index = self.textbox.index(tk.SEL_LAST)
 
-            # Toggle bold tag
             current_tags = self.textbox.tag_names(start_index)
             if 'bold' in current_tags:
                 self.textbox.tag_remove('bold', start_index, end_index)
             else:
                 self.textbox.tag_add('bold', start_index, end_index)
-                self.textbox.tag_configure('bold', font=(self.font_combobox.get(), 10, 'bold'))
+                self.textbox.tag_configure('bold', font=(self.font_combobox.get(), self.font_size_spinbox.get(), 'bold'))
         except tk.TclError:
             pass
 
     def change_font(self, event):
+        font_size = int(self.font_size_spinbox.get())
         try:
-            # Get selected text indices
             start_index = self.textbox.index(tk.SEL_FIRST)
             end_index = self.textbox.index(tk.SEL_LAST)
 
-            # Change font
             self.textbox.tag_add('font_change', start_index, end_index)
-            self.textbox.tag_configure('font_change', font=(self.font_combobox.get(), 10, 'normal'))
+            self.textbox.tag_configure('font_change', font=(self.font_combobox.get(), self.font_size_spinbox.get(), 'normal'))
         except tk.TclError:
             pass
+
+    def change_font_size(self):
+        try:
+            start_index = self.textbox.index(tk.SEL_FIRST)
+            end_index = self.textbox.index(tk.SEL_LAST)
+
+            self.textbox.tag_add('font_change', start_index, end_index)
+            self.textbox.tag_configure('font_change', font=(self.font_combobox.get(), self.font_size_spinbox.get(), 'normal'))
+        except tk.TclError:
+            pass
+
 
 class Editor:
     def __init__(self, master):
@@ -138,6 +146,7 @@ class Editor:
         filemenu.add_command(label="Close", command=self.close_tab)
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.exit)
+       
         
         # Create Edit Menu
         editmenu = tk.Menu(menubar, tearoff=0)
@@ -188,6 +197,21 @@ class Editor:
         self.nb.add(Tab(FileDir='Untitled'), text='Untitled')
         self.nb.add(Tab(FileDir='f'), text=' + ')
 
+
+    
+    def change_font_size(self, event):
+        curr_tab = self.nb.current_tab()
+        try:
+            # Get selected text indices
+            start_index = curr_tab.textbox.index(tk.SEL_FIRST)
+            end_index = curr_tab.textbox.index(tk.SEL_LAST)
+
+            # Change font size
+            size = int(self.size_combobox.get())
+            curr_tab.textbox.tag_add('font_size_change', start_index, end_index)
+            curr_tab.textbox.tag_configure('font_size_change', font=(curr_tab.font_combobox.get(), size))
+        except tk.TclError:
+            pass
     def open_file(self, *args):        
         # Open a window to browse to the file you would like to open, returns the directory.
         file_dir = (tkinter
